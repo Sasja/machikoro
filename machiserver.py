@@ -6,6 +6,7 @@ def debug(message):
     print message
     pass
 
+# http://i2.wp.com/rollindiceshow.com/wp-content/uploads/2015/03/IMG_0003.jpg
 allCards = {
     "wheatfield"        :{"cost":1, "type":"primary",   "roll":[1],    "amount":1},
     "ranch"             :{"cost":1, "type":"primary",   "roll":[2],    "amount":1},
@@ -293,15 +294,15 @@ class Player:
     def chooseAction(self, actionRequest):
         raise NotImplementedError()
 
-class YesToAllPlayer(Player):
-    # this is a most sucky bot, beaten easily by the RandomPlayer
+class YesToAllBot(Player):
+    # this is a most dumb bot
     def chooseAction(self, actionRequest):
         debug(actionRequest)
         choice = actionRequest["options"][0]
         debug(choice)
         return choice
 
-class RandomPlayer(Player):
+class RandomBot(Player):
     # this is the absolute baseline AI
     def chooseAction(self, actionRequest):
         debug(actionRequest)
@@ -309,8 +310,8 @@ class RandomPlayer(Player):
         debug(choice)
         return choice
 
-class CafePlayer(Player):
-    # this seems to beat the randombot! 180 wins vs 130 out of 500
+class CafeBot(Player):
+    # this bot favours buying cafes for some reason
     def chooseAction(self, actionRequest):
         debug(actionRequest)
         if "cafe" in actionRequest["options"]:
@@ -322,11 +323,11 @@ class CafePlayer(Player):
 
 if __name__ == "__main__":
     random.seed()
-    players = [YesToAllPlayer("YesBot"), CafePlayer("CafeBot"),
-               RandomPlayer("RandomBot1"), RandomPlayer("RandomBot2")]
+    players = [YesToAllBot("YesBot"), CafeBot("CafeBot"),
+               RandomBot("RandomBot1"), RandomBot("RandomBot2")]
     
     score = {p.getId():0 for p in players}
-    for i in range(10):
+    for i in range(1):
         game = Game(players)
         game.play()
         winnerId = game.gameState.winnerId()
