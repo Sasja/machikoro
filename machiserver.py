@@ -295,7 +295,7 @@ class Player:
         raise NotImplementedError()
 
 class YesToAllBot(Player):
-    # this is a most dumb bot
+    # this is a most dumb bot, but better than the randombot!
     def chooseAction(self, actionRequest):
         debug(actionRequest)
         choice = actionRequest["options"][0]
@@ -331,7 +331,5 @@ if __name__ == "__main__":
         game = Game(players)
         game.play()
         winnerId = game.gameState.winnerId()
-        print winnerId + " wins!"
         score[winnerId] += 1
-
-    print score
+        print "score = " + str(score)
