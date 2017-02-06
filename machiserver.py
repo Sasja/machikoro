@@ -6,18 +6,20 @@ def debug(message):
     print message
     pass
 
-#TODO check amounts
 allCards = {
     "wheatfield"        :{"cost":1, "type":"primary",   "roll":[1],    "amount":1},
     "ranch"             :{"cost":1, "type":"primary",   "roll":[2],    "amount":1},
-    "forest"            :{"cost":3, "type":"primary",   "roll":[5],    "amount":3},
-    "mine"              :{"cost":6, "type":"primary",   "roll":[9],    "amount":3},
-    "appleorchard"      :{"cost":3, "type":"primary",   "roll":[10],   "amount":2},
-    "bakery"            :{"cost":1, "type":"secondary", "roll":[2,3],  "amount":2},
-    "conveniencestore"  :{"cost":2, "type":"secondary", "roll":[4],    "amount":2},
-    "cheesefactory"     :{"cost":5, "type":"secondary", "roll":[7],    "amount":2},
-    "furniturefactory"  :{"cost":3, "type":"secondary", "roll":[8],    "amount":2},
-    "market"            :{"cost":2, "type":"secondary", "roll":[11,12],"amount":2},
+    "forest"            :{"cost":3, "type":"primary",   "roll":[5],    "amount":1},
+    "mine"              :{"cost":6, "type":"primary",   "roll":[9],    "amount":5},
+    "appleorchard"      :{"cost":3, "type":"primary",   "roll":[10],   "amount":3},
+    "bakery"            :{"cost":1, "type":"secondary", "roll":[2,3],  "amount":1},
+    "conveniencestore"  :{"cost":2, "type":"secondary", "roll":[4],    "amount":3},
+    "cheesefactory"     :{"cost":5, "type":"multiplier","roll":[7],
+                            "factor":3, "cofactor":["ranch"]},
+    "furniturefactory"  :{"cost":3, "type":"multiplier","roll":[8],
+                            "factor":3, "cofactor":["mine", "forest"]},
+    "market"            :{"cost":2, "type":"multiplier","roll":[11,12],
+                            "factor":2, "cofactor":["wheatfield", "appleorchard"]},
     "cafe"              :{"cost":2, "type":"commercial","roll":[3],    "amount":1},
     "restaurant"        :{"cost":3, "type":"commercial","roll":[9-10], "amount":2},
     "stadium"           :{"cost":6, "type":"major",     "roll":[6]               },
@@ -29,10 +31,12 @@ allCards = {
     "radiotower"        :{"cost":22,"type":"landmark"}
     }
 
-primaryCards =    {k:v for k,v in allCards.items() if v["type"] == "primary"}
-secondaryCards =  {k:v for k,v in allCards.items() if v["type"] == "secondary"}
-commercialCards = {k:v for k,v in allCards.items() if v["type"] == "commercial"}
-landmarkCards =   {k:v for k,v in allCards.items() if v["type"] == "landmark"}
+primaryCards =    {k:v for k,v in allCards.items() if v["type"] == "primary"}    # blue
+secondaryCards =  {k:v for k,v in allCards.items() if v["type"] == "secondary"}  # green
+multiplierCards = {k:v for k,v in allCards.items() if v["type"] == "multiplier"} # green
+commercialCards = {k:v for k,v in allCards.items() if v["type"] == "commercial"} # red
+majorCards =      {k:v for k,v in allCards.items() if v["type"] == "major"}      # purple
+landmarkCards =   {k:v for k,v in allCards.items() if v["type"] == "landmark"}   # yellow
 
 class Game:
     def __init__(self, players):
@@ -95,11 +99,9 @@ class Game:
 
             if self.gameState.playerOwnsN(playerId, "businesscenter") > 0:
                 orderedOtherIds = self.gameState.getPayOrder()  # same relative order for everyone
-                tradableCards = set(
-                      primaryCards.keys()
-                    + secondaryCards.keys()
-                    + commercialCards.keys()
-                    ) #TODO correct with rules? no major buildings?
+                tradableCards = ( set(allCards.keys())
+                                - set(landmarkCards.keys())
+                                - set(majorCards.keys())) #TODO rules? no major buildings?
                 cities = self.gameState.data["city"]
 
                 # tradewho
@@ -199,12 +201,22 @@ class GameState:
                     if n > 0:
                         self.tryMoveCash(playerId, luckyBastardId, n * cardData["amount"])
 
-        # then green (you throw your own nr)
+        # then green (you throw your own nr) (green is secondary + multipliers)
+        # regular secondary cards
         for cardName, cardData in secondaryCards.items():
             if roll in cardData["roll"]:
                 n = self.playerOwnsN(playerId, cardName)
                 if n > 0:
                     self.playerGainsCash(playerId, n * cardData["amount"])
+
+        # multiplier cards (cheese factory, furniture factory and market)
+        for cardName, cardData in multiplierCards.items():
+            # these card effects do not stack up with multiples TODO: check rules
+            if roll in cardData["roll"] and self.playerOwnsN(playerId, cardName):
+                cofactors = cardData["cofactor"]
+                n = sum([self.playerOwnsN(playerId, c) for c in cofactors])
+                if n > 0:
+                    self.playerGainsCash(playerId, n * cardData["factor"])
 
         # then blue (anyone benefits from any throw)
         for cardName, cardData in primaryCards.items():
