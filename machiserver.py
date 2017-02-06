@@ -102,7 +102,7 @@ class Game:
                 orderedOtherIds = self.gameState.getPayOrder()  # same relative order for everyone
                 tradableCards = ( set(allCards.keys())
                                 - set(landmarkCards.keys())
-                                - set(majorCards.keys())) #TODO rules? no major buildings?
+                                - set(majorCards.keys())) #TODO rules? no trading major buildings?
                 cities = self.gameState.data["city"]
 
                 # tradewho
@@ -130,7 +130,7 @@ class Game:
 
     def buildPhase(self, player):
         playerId = player.getId()
-        buildings = self.gameState.getAffordableBuildings(playerId)
+        buildings = self.gameState.getBuildableBuildings(playerId)
         if len(buildings) > 0: 
             request = {"action":"buid", "options":buildings + [""]}
             choice = player.chooseAction(request)
@@ -192,7 +192,6 @@ class GameState:
         return result
 
     def calcIncome(self, roll):
-        #TODO work out, apply multipliers
         playerId = self.getCurrentPlayerId()
         # first red (commercial buildings, you'll pay for this)
         for cardName, cardData in commercialCards.items():
@@ -212,7 +211,7 @@ class GameState:
 
         # multiplier cards (cheese factory, furniture factory and market)
         for cardName, cardData in multiplierCards.items():
-            # these card effects do not stack up with multiples TODO: check rules
+            # these card effects do not stack up i believe 2 markets = 1 market TODO: check rules
             if roll in cardData["roll"] and self.playerOwnsN(playerId, cardName):
                 cofactors = cardData["cofactor"]
                 n = sum([self.playerOwnsN(playerId, c) for c in cofactors])
@@ -257,7 +256,7 @@ class GameState:
         self.currentTurnNr += 1
         self.currentPlayerIndex = ( self.currentPlayerIndex + 1 ) % len(self.playerIds)
 
-    def getAffordableBuildings(self, playerId):
+    def getBuildableBuildings(self, playerId):
         result = []
         cash = self.data["cash"][playerId]
         # first landmarks not yet built (so the YesToAllPlayer favors landmarks)
@@ -265,7 +264,7 @@ class GameState:
             if cash >= cardData["cost"] and not self.playerOwnsN(playerId, cardName) > 0:
                 result.append(cardName)
         # now add buildings in the bank
-        #TODO should we check against building 2 tvstations and such?
+        #TODO should we prevent building 2 tvstations and other majors?
         available = [building for building,n in self.data["buildingbank"].items() if n > 0]
         result += [b for b in available if cash >= allCards[b]["cost"]]
 
