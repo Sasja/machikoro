@@ -6,6 +6,7 @@ def debug(message):
     print message
     pass
 
+# http://idwgames.com/wp-content/uploads/2015/02/Machi-RULES-reduced.pdf
 # http://i2.wp.com/rollindiceshow.com/wp-content/uploads/2015/03/IMG_0003.jpg
 allCards = {
     "wheatfield"        :{"cost":1, "type":"primary",   "roll":[1],    "amount":1},
@@ -27,9 +28,9 @@ allCards = {
     "tvstation"         :{"cost":7, "type":"major",     "roll":[6]               },
     "businesscenter"    :{"cost":8, "type":"major",     "roll":[6]               },
     "trainstation"      :{"cost":4, "type":"landmark"},
-    "shoppingmall"      :{"cost":10,"type":"landmark"},
-    "amusementpark"     :{"cost":16,"type":"landmark"},
-    "radiotower"        :{"cost":22,"type":"landmark"}
+    "shoppingmall"      :{"cost":10,"type":"landmark"},     # TODO implement effect
+    "amusementpark"     :{"cost":16,"type":"landmark"},     # TODO implement effect
+    "radiotower"        :{"cost":22,"type":"landmark"}      # TODO implement effect
     }
 
 primaryCards =    {k:v for k,v in allCards.items() if v["type"] == "primary"}    # blue
@@ -102,7 +103,7 @@ class Game:
                 orderedOtherIds = self.gameState.getPayOrder()  # same relative order for everyone
                 tradableCards = ( set(allCards.keys())
                                 - set(landmarkCards.keys())
-                                - set(majorCards.keys())) #TODO rules? no trading major buildings?
+                                - set(majorCards.keys()))
                 cities = self.gameState.data["city"]
 
                 # tradewho
@@ -257,18 +258,16 @@ class GameState:
         self.currentPlayerIndex = ( self.currentPlayerIndex + 1 ) % len(self.playerIds)
 
     def getBuildableBuildings(self, playerId):
-        result = []
-        cash = self.data["cash"][playerId]
         # first landmarks not yet built (so the YesToAllPlayer favors landmarks)
-        for cardName,cardData in landmarkCards.items():
-            if cash >= cardData["cost"] and not self.playerOwnsN(playerId, cardName) > 0:
-                result.append(cardName)
-        # now add buildings in the bank
-        #TODO should we prevent building 2 tvstations and other majors?
-        available = [building for building,n in self.data["buildingbank"].items() if n > 0]
-        result += [b for b in available if cash >= allCards[b]["cost"]]
+        available =  set([b for b in landmarkCards.keys() if self.playerOwnsN(playerId, b) == 0])
+        # add all building types available in the bank...
+        available.update([b for b,n in self.data["buildingbank"].items() if n > 0])
+        # ... excluding the major building type buildings allready build by player
+        available.difference_update([b for b in majorCards.keys() if self.playerOwnsN(playerId, b) > 0])
 
-        return result
+        # return all these that the player can afford
+        cash = self.data["cash"][playerId]
+        return [b for b in available if cash >= allCards[b]["cost"]]
 
     def build(self, playerId, building):
         if building in landmarkCards.keys():
@@ -326,7 +325,7 @@ if __name__ == "__main__":
                RandomBot("RandomBot1"), RandomBot("RandomBot2")]
     
     score = {p.getId():0 for p in players}
-    for i in range(1):
+    for i in range(20):
         game = Game(players)
         game.play()
         winnerId = game.gameState.winnerId()
