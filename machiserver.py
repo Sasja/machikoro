@@ -28,9 +28,9 @@ allCards = {
     "tvstation"         :{"cost":7, "type":"major",     "roll":[6]               },
     "businesscenter"    :{"cost":8, "type":"major",     "roll":[6]               },
     "trainstation"      :{"cost":4, "type":"landmark"},
-    "shoppingmall"      :{"cost":10,"type":"landmark"},     # TODO implement effect
+    "shoppingmall"      :{"cost":10,"type":"landmark"},
     "amusementpark"     :{"cost":16,"type":"landmark"},     # TODO implement effect
-    "radiotower"        :{"cost":22,"type":"landmark"}      # TODO implement effect
+    "radiotower"        :{"cost":22,"type":"landmark"}
     }
 
 primaryCards =    {k:v for k,v in allCards.items() if v["type"] == "primary"}    # blue
@@ -195,22 +195,30 @@ class GameState:
     def calcIncome(self, roll):
         playerId = self.getCurrentPlayerId()
         # first red (commercial buildings, you'll pay for this)
+        # also affected by shopping mall bonus
         for cardName, cardData in commercialCards.items():
             if roll in cardData["roll"]:
+                basicAmount = cardData["amount"]
                 for luckyBastardId in self.getPayOrder():
                     n = self.playerOwnsN(luckyBastardId, cardName)
+                    shoppingmallBonus = 1 if self.playerOwnsN(luckyBastardId, cardName) else 0
                     if n > 0:
-                        self.tryMoveCash(playerId, luckyBastardId, n * cardData["amount"])
+                        self.tryMoveCash(playerId, luckyBastardId, n * (basicAmount + shoppingmallBonus))
 
         # then green (you throw your own nr) (green is secondary + multipliers)
-        # regular secondary cards
+        #   regular secondary cards (bakery and convenience store)
+        #   also affected by shoppingmall bonus
         for cardName, cardData in secondaryCards.items():
             if roll in cardData["roll"]:
                 n = self.playerOwnsN(playerId, cardName)
+                shoppingmallBonus = 1 if self.playerOwnsN(playerId, cardName) else 0
                 if n > 0:
-                    self.playerGainsCash(playerId, n * cardData["amount"])
+                    basicAmount = cardData["amount"]
+                    self.playerGainsCash(playerId, n * (basicAmount + shoppingmallBonus))
 
-        # multiplier cards (cheese factory, furniture factory and market)
+        # green bis
+        #   multiplier cards (cheese factory, furniture factory and market)
+        # not affected by shopping mall bonus
         for cardName, cardData in multiplierCards.items():
             # these card effects do not stack up i believe 2 markets = 1 market TODO: check rules
             if roll in cardData["roll"] and self.playerOwnsN(playerId, cardName):
@@ -325,7 +333,7 @@ if __name__ == "__main__":
                RandomBot("RandomBot1"), RandomBot("RandomBot2")]
     
     score = {p.getId():0 for p in players}
-    for i in range(20):
+    for i in range(1):
         game = Game(players)
         game.play()
         winnerId = game.gameState.winnerId()
