@@ -29,7 +29,7 @@ allCards = {
     "businesscenter"    :{"cost":8, "type":"major",     "roll":[6]               },
     "trainstation"      :{"cost":4, "type":"landmark"},
     "shoppingmall"      :{"cost":10,"type":"landmark"},
-    "amusementpark"     :{"cost":16,"type":"landmark"},     # TODO implement effect
+    "amusementpark"     :{"cost":16,"type":"landmark"},
     "radiotower"        :{"cost":22,"type":"landmark"}
     }
 
@@ -49,19 +49,26 @@ class Game:
 
     def play(self):
         while self.gameState.winnerId() == None:
-            player = self.players[self.gameState.getCurrentPlayerId()]
+            playerId = self.gameState.getCurrentPlayerId()
+            player = self.players[playerId]
 
             debug(pprint.pformat(self.gameState.data))
             debug("========== starting turn " + str(self.gameState.currentTurnNr) + " ==========")
-            debug("-> " + self.gameState.getCurrentPlayerId() + "'s turn")
+            debug("-> " + playerId + "'s turn")
 
             roll = self.rollPhase(player)
-            self.gameState.calcIncome(roll)
+            # if you roll doubles and have a amusement park you get an extra turn
+            extraTurn = (     self.gameState.playerOwnsN(playerId,"amusementpark")
+                          and len(roll) == 2
+                          and roll[0] == roll[1] )
+            if extraTurn:
+                debug(playerId + " threw doubles, so gets another turn after this one!")
 
+            self.gameState.calcIncome(sum(roll))
             self.satanPhase(player, roll) #will only do smth on roll == 6
             self.buildPhase(player)
 
-            self.gameState.nextTurn()
+            self.gameState.nextTurn(extraTurn = extraTurn)
 
     def rollPhase(self, player):
         playerId = player.getId()
@@ -71,13 +78,13 @@ class Game:
             choice = player.chooseAction(request)
             if choice == "2":
                 ndice = 2
-        roll = sum([random.randint(1,6) for i in range(ndice)])
+        roll = [random.randint(1,6) for i in range(ndice)]
         debug("rolled " + str(roll))
         if self.gameState.playerOwnsN(playerId, "radiotower") > 0:
             request = {"action":"reroll", "lastroll":roll, "options":["y","n"]}
             choice = player.chooseAction(request)
             if choice == "y":
-                roll = sum([random.randint(1,6) for i in range(ndice)])
+                roll = [random.randint(1,6) for i in range(ndice)]
                 debug("rerolled " + str(roll))
         return roll
 
@@ -260,10 +267,11 @@ class GameState:
         cityB.append(buildingA)
         debug(playerIdA + " trades its " + buildingA + " with " + playerIdB + "'s " + buildingB)
 
-    def nextTurn(self):
+    def nextTurn(self, extraTurn = False):
         debug("==========  ending turn " + str(self.currentTurnNr) + "  ==========")
         self.currentTurnNr += 1
-        self.currentPlayerIndex = ( self.currentPlayerIndex + 1 ) % len(self.playerIds)
+        if not extraTurn:
+            self.currentPlayerIndex = ( self.currentPlayerIndex + 1 ) % len(self.playerIds)
 
     def getBuildableBuildings(self, playerId):
         # first landmarks not yet built (so the YesToAllPlayer favors landmarks)
