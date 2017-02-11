@@ -40,22 +40,26 @@ commercialCards = {k:v for k,v in allCards.items() if v["type"] == "commercial"}
 majorCards =      {k:v for k,v in allCards.items() if v["type"] == "major"}      # purple
 landmarkCards =   {k:v for k,v in allCards.items() if v["type"] == "landmark"}   # yellow
 
-class Game:
-    def __init__(self, players):
-        assert len(players) == 4
-        self.players = {p.getId():p for p in players} # store players in dict
-        self.playerIds = [p.getId() for p in players] # order important!
-        assert(len(self.playerIds) == len(set(self.playerIds))) # check for duplicate playerIds
-        self.currentPlayerIndex = 0
-        self.currentTurnNr = 0
-        self.data = {}
-        self.data["buildingbank"] = {
-            "wheatfield"        :6,
+allActions = ["ndice", "reroll", "stealfrom", "tradewho", "tradewhat", "tradefor", "build"]
+allPhases = allActions + "roll" #roll is an action for the dice object instead of player
+
+class Table:
+    """This guy manages the stuff on the table without knowing the rules of the game
+    Ask it to do something it cannot, and it will throw an assert.
+    This class is not aware of any rules except the amount of which cards in the box,
+    it DOES know landmarks from regular cards though as landmarks are attached to players.
+    Asking the Table class to build somthing that the buildingbank does not have leads
+    to an assert, transferring to much money from a player also leads to assert, building
+    a landmark twice also asserts, etc, you get my drift"""
+    def __init__(self, playerIds):
+        assert(len(set(playerIds)) == len(playerIds) == 4) # 4 unique ids
+        self.buildingBank = {
+            "wheatfield"        :10,
+            "bakery"            :10,
             "ranch"             :6,
             "forest"            :6,
             "mine"              :6,
             "appleorchard"      :6,
-            "bakery"            :6,
             "conveniencestore"  :6,
             "cheesefactory"     :6,
             "furniturefactory"  :6,
@@ -65,10 +69,63 @@ class Game:
             "stadium"           :4,
             "tvstation"         :4,
             "businesscenter"    :4
-            }
-        self.data["city"] = {playerId:["wheatfield","bakery"] for playerId in self.playerIds}
-        self.data["cash"] = {playerId:3                       for playerId in self.playerIds}
+            }   # does not include landmarks as these are per player
+        self.cities = {playerId:[] for playerId in playerIds}
+        self.bank =   {playerId:0  for playerId in playerIds}
+        for playerId in playerIds:
+            self.build(playerId, "wheatfield")
+            self.build(playerId, "bakery")
+            self.takeFromBank(playerId, 3)
+    def build(playerId, building):
+        if building in landmarkCards.keys():
+            assert(building not in self.cities[playerId])
+        else:
+            nInBank = self.buildingbank[building]
+            assert(nInBank > 0)
+            self.buildingbank[building] = nInBank - 1
+        self.cities[playerId].append(building)
+    def looseCash(playerId, amount):
+        account = self.bank[playerId]
+        assert(amount <= account)
+        self.bank[playerId] = account - amount
+    def gainCash(playerId, amount):
+        account = self.bank[playerId]
+        self.bank[playerId] = account + amount
 
+class GameState:
+    """This baby manages the state of the game between actions besides whats on the table
+    it knows whos turn it is and decisions made by the player did during its turn, it does not store
+    what money transfers happened, but what he last rolled, who he stole from"""
+    def __init__(self, playerIds):
+        assert(len(self.playerIds) == len(set(self.playerIds)) == 4) # check for duplicate playerIds
+        self.playerIds = playerIds
+        self.currentTurnNr = 0
+        self.currentPlayerIndex = 0
+        self.phase = None
+        self.state = {}
+    def nextTurn(self, extraTurn = False):
+        debug("==========  ending turn " + str(self.currentTurnNr) + "  ==========")
+        self.phase = None
+        self.state = {} # clear all state
+        self.currentTurnNr += 1
+        if not extraTurn:
+            self.currentPlayerIndex = (self.currentPlayerIndex + 1) % len(self.playerIds)
+    def setPhase(self, phase, phaseResult):
+        assert(phase in allPhases)
+        self.phase = phase
+        self.state[phase] = phaseResult
+    def getPhase():
+        return self.phase
+    def getPhaseResult(phase):
+        assert(phase in self.state.keys())
+        return self.state[phase]
+
+class GameMaster:
+    """This guy only knows the rules of the game and is stateless in itself!"""
+    def createActionRequest(table, gamestate):
+        return NotImplementedError()
+    def winner(table, gamestate):
+        return NotImplementedError()
     def play(self):
         while self.winnerId() == None:
             playerId = self.getCurrentPlayerId()
@@ -162,7 +219,7 @@ class Game:
         playerId = player.getId()
         buildings = self.getBuildableBuildings(playerId)
         if len(buildings) > 0: 
-            request = {"action":"buid", "options":buildings + [""]}
+            request = {"action":"build", "options":buildings + [""]}
             choice = player.chooseAction(request)
             if choice in buildings:
                 self.build(playerId, choice)
