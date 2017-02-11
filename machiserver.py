@@ -41,7 +41,7 @@ majorCards =      {k:v for k,v in allCards.items() if v["type"] == "major"}     
 landmarkCards =   {k:v for k,v in allCards.items() if v["type"] == "landmark"}   # yellow
 
 allActions = ["ndice", "reroll", "stealfrom", "tradewho", "tradewhat", "tradefor", "build"]
-allPhases = allActions + "roll" #roll is an action for the dice object instead of player
+allPhases = allActions + ["roll", "income"]
 
 class Table:
     """This guy manages the stuff on the table without knowing the rules of the game
@@ -53,6 +53,7 @@ class Table:
     a landmark twice also asserts, etc, you get my drift"""
     def __init__(self, playerIds):
         assert(len(set(playerIds)) == len(playerIds) == 4) # 4 unique ids
+        self.playerIds = playerIds
         self.buildingBank = {
             "wheatfield"        :10,
             "bakery"            :10,
@@ -76,7 +77,7 @@ class Table:
             self.build(playerId, "wheatfield")
             self.build(playerId, "bakery")
             self.takeFromBank(playerId, 3)
-    def build(playerId, building):
+    def build(self, playerId, building):
         if building in landmarkCards.keys():
             assert(building not in self.cities[playerId])
         else:
@@ -84,98 +85,93 @@ class Table:
             assert(nInBank > 0)
             self.buildingbank[building] = nInBank - 1
         self.cities[playerId].append(building)
-    def looseCash(playerId, amount):
+    def looseCash(self, playerId, amount):
         account = self.bank[playerId]
         assert(amount <= account)
         self.bank[playerId] = account - amount
-    def gainCash(playerId, amount):
+    def gainCash(self, playerId, amount):
         account = self.bank[playerId]
         self.bank[playerId] = account + amount
+    def getPlayerIds(self):
+        return self.playerIds
+    def playerHasN(self, playerId, building):
+        assert(building in allCards)
+        return self.cities[playerId].count(building)
 
-class GameState:
-    """This baby manages the state of the game between actions besides whats on the table
-    it knows whos turn it is and decisions made by the player did during its turn, it does not store
-    what money transfers happened, but what he last rolled, who he stole from"""
-    def __init__(self, playerIds):
+class RandomDice():
+    def roll(self, ndice):
+        assert(0 < ndice <= 2)
+        return [random.randint(1,6) for i in range(ndice)]
+
+class GameMaster:
+    def __init__(self, players):
+        self.playerIds = [p.getId() for p in players]
         assert(len(self.playerIds) == len(set(self.playerIds)) == 4) # check for duplicate playerIds
-        self.playerIds = playerIds
-        self.currentTurnNr = 0
         self.currentPlayerIndex = 0
-        self.phase = None
-        self.state = {}
-    def nextTurn(self, extraTurn = False):
+        self.playerDict = {p.getId():p for p in players}
+        self.currentTurnNr = 0
+        self.currentPhase = allPhases[0]
+        self.turnState = {}
+        self.table = Table(self.playerIds)
+        self.dice = RandomDice()
+    def getWinnerId(self):
+        winners = []
+        playerIds = self.table.getPlayerIds()
+        for playerId in playerIds
+            if all([self.table.playerHasN(playerId, landmark) for landmark in landmarkCards.keys()]):
+                winners.append(playerId)
+        assert(len(winners) < 2) # two winners are not possible without having one first
+        return None if len(winners) == 0 else winners[0]
+    def _endTurn(self, extraTurn = False):
         debug("==========  ending turn " + str(self.currentTurnNr) + "  ==========")
-        self.phase = None
-        self.state = {} # clear all state
+        self.currentPhase = allPhases[0]
+        self.turnState = {} # clear all state
         self.currentTurnNr += 1
         if not extraTurn:
             self.currentPlayerIndex = (self.currentPlayerIndex + 1) % len(self.playerIds)
-    def setPhase(self, phase, phaseResult):
-        assert(phase in allPhases)
-        self.phase = phase
-        self.state[phase] = phaseResult
-    def getPhase():
-        return self.phase
-    def getPhaseResult(phase):
-        assert(phase in self.state.keys())
-        return self.state[phase]
-
-class GameMaster:
-    """This guy only knows the rules of the game and is stateless in itself!"""
-    def createActionRequest(table, gamestate):
-        return NotImplementedError()
-    def winner(table, gamestate):
-        return NotImplementedError()
     def play(self):
-        while self.winnerId() == None:
-            playerId = self.getCurrentPlayerId()
-            player = self.players[playerId]
+        player = self.playerDict[self.playerIds[self.currentPlayerIndex]]
+        roll = self._rollPhase()
+        # if you roll doubles and have an amusement park you get an extra turn
+        extraTurn = (     self.table.playerHasN(playerId,"amusementpark")
+                      and len(roll) == 2
+                      and roll[0] == roll[1] )
+        if extraTurn:
+            debug(playerId + " threw doubles, so gets another turn after this one!")
 
-            debug(pprint.pformat(self.data))
-            debug("========== starting turn " + str(self.currentTurnNr) + " ==========")
-            debug("-> " + playerId + "'s turn")
+        self._calcIncome(player, roll)
+        self._satanPhase(player, roll) #will only do smth on roll == 6
+        self._buildPhase(player)
 
-            roll = self.rollPhase(player)
-            # if you roll doubles and have an amusement park you get an extra turn
-            extraTurn = (     self.playerOwnsN(playerId,"amusementpark")
-                          and len(roll) == 2
-                          and roll[0] == roll[1] )
-            if extraTurn:
-                debug(playerId + " threw doubles, so gets another turn after this one!")
+        self._endTurn(extraTurn = extraTurn)
 
-            self.calcIncome(sum(roll))
-            self.satanPhase(player, roll) #will only do smth on roll == 6
-            self.buildPhase(player)
-
-            self.nextTurn(extraTurn = extraTurn)
-
-    def rollPhase(self, player):
+    def _rollPhase(self, player):
         playerId = player.getId()
         ndice = 1
-        if self.playerOwnsN(playerId, "trainstation") > 0:
+        if self.table.playerHasN(playerId, "trainstation") > 0:
             request = {"action":"ndice", "options":["1","2"]}
             choice = player.chooseAction(request)
             if choice == "2":
                 ndice = 2
-        roll = [random.randint(1,6) for i in range(ndice)]
+        roll = dice.roll(ndice)
         debug("rolled " + str(roll))
-        if self.playerOwnsN(playerId, "radiotower") > 0:
+        if self.playerHasN(playerId, "radiotower") > 0:
             request = {"action":"reroll", "lastroll":roll, "options":["y","n"]}
             choice = player.chooseAction(request)
             if choice == "y":
-                roll = [random.randint(1,6) for i in range(ndice)]
+                roll = dice.roll(ndice)
                 debug("rerolled " + str(roll))
         return roll
 
-    def satanPhase(self, player, roll):
-        if roll == 6:
+    def _satanPhase(self, player, roll):
+        if sum(roll) == 6:
             playerId = player.getId()
-            if self.playerOwnsN(playerId, "stadium") > 0:
-                for dupee in self.getPayOrder():
-                    self.tryMoveCash(dupee, playerId, 2)
+            if self.playerHasN(playerId, "stadium") > 0:
+                for dupee in self._getPayOrder():
+                    self.table._tryMoveCash(dupee, playerId, 2)
 
-            if self.playerOwnsN(playerId, "tvstation") > 0:
-                orderedOtherIds = self.getPayOrder()  # same relative order for everyone
+            if self.table.playerHasN(playerId, "tvstation") > 0:
+                orderedOtherIds = self._getPayOrder()  # same relative order for everyone
                 accounts = [(p,self.data["cash"][p]) for p in orderedOtherIds]
                 playersWithCash = [p for p,amount in accounts if amount > 0]
                 if playersWithCash:
@@ -227,13 +223,6 @@ class GameMaster:
     def getCurrentPlayerId(self):
         return self.playerIds[self.currentPlayerIndex]
 
-    def winnerId(self):
-        winners = []
-        for playerId,city in self.data["city"].items():
-            if all([landmark in city for landmark in landmarkCards.keys()]):
-                winners.append(playerId)
-        assert(len(winners) < 2) # two winners are not possible without having one first
-        return None if len(winners) == 0 else winners[0]
 
     def playerOwnsN(self, playerId, building):
         return self.data["city"][playerId].count(building)
@@ -383,11 +372,26 @@ if __name__ == "__main__":
     random.seed()
     players = [YesToAllBot("YesBot"), CafeBot("CafeBot"),
                RandomBot("RandomBot1"), RandomBot("RandomBot2")]
+    playerIds = [p.getId() for p in players]
     
     score = {p.getId():0 for p in players}
-    for i in range(100):
-        game = Game(players)
-        game.play()
-        winnerId = game.winnerId()
-        score[winnerId] += 1
+    for i in range(10):
+        table = Table(playerIds)
+        gameState = GameState(playerIds)
+        while not GameMaster.getWinnerId(table, gameState):
+            currentPlayer = players[gameState.getCurrentPlayerId()]
+            if GameMaster.requiresChoice(table, gameState):
+                actionRequest = GameMaster.createActionRequest(table, gameState)
+                response = currentPlayer.chooseAction(actionRequest)
+                gameState
+            elif GameMaster.requiresRoll(table, gameState):
+                GameMaster
+                pass
+            else
+            action = GameMaster.nextAction(table, gameState)
+            if action.requiresDecision()
+            actionRequest = GameMaster.createActionRequest(table,gameState)
+            response = currentPlayer.chooseAction(actionRequest)
+            GameMaster.applyAction(table, gameState, actionRequest, response)
+        score[GameMaster.getWinnerId(table, gameState)] += 1
         print "score = " + str(score)
