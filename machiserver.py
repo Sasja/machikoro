@@ -43,44 +43,66 @@ landmarkCards =   {k:v for k,v in allCards.items() if v["type"] == "landmark"}  
 class Game:
     def __init__(self, players):
         assert len(players) == 4
-        self.players = {p.getId():p for p in players}
-        assert(len(self.players) == len(set(self.players))) # check for duplicates
-        self.gameState = GameState([p.getId() for p in players])
+        self.players = {p.getId():p for p in players} # store players in dict
+        self.playerIds = [p.getId() for p in players] # order important!
+        assert(len(self.playerIds) == len(set(self.playerIds))) # check for duplicate playerIds
+        self.currentPlayerIndex = 0
+        self.currentTurnNr = 0
+        self.data = {}
+        self.data["buildingbank"] = {
+            "wheatfield"        :6,
+            "ranch"             :6,
+            "forest"            :6,
+            "mine"              :6,
+            "appleorchard"      :6,
+            "bakery"            :6,
+            "conveniencestore"  :6,
+            "cheesefactory"     :6,
+            "furniturefactory"  :6,
+            "market"            :6,
+            "cafe"              :6,
+            "restaurant"        :6,
+            "stadium"           :4,
+            "tvstation"         :4,
+            "businesscenter"    :4
+            }
+        self.data["city"] = {playerId:["wheatfield","bakery"] for playerId in self.playerIds}
+        self.data["cash"] = {playerId:3                       for playerId in self.playerIds}
 
     def play(self):
-        while self.gameState.winnerId() == None:
-            playerId = self.gameState.getCurrentPlayerId()
+        while self.winnerId() == None:
+            playerId = self.getCurrentPlayerId()
             player = self.players[playerId]
 
-            debug(pprint.pformat(self.gameState.data))
-            debug("========== starting turn " + str(self.gameState.currentTurnNr) + " ==========")
+            debug(pprint.pformat(self.data))
+            debug("========== starting turn " + str(self.currentTurnNr) + " ==========")
             debug("-> " + playerId + "'s turn")
 
             roll = self.rollPhase(player)
             # if you roll doubles and have an amusement park you get an extra turn
-            extraTurn = (     self.gameState.playerOwnsN(playerId,"amusementpark")
+            extraTurn = (     self.playerOwnsN(playerId,"amusementpark")
                           and len(roll) == 2
                           and roll[0] == roll[1] )
             if extraTurn:
                 debug(playerId + " threw doubles, so gets another turn after this one!")
 
-            self.gameState.calcIncome(sum(roll))
+            self.calcIncome(sum(roll))
             self.satanPhase(player, roll) #will only do smth on roll == 6
             self.buildPhase(player)
 
-            self.gameState.nextTurn(extraTurn = extraTurn)
+            self.nextTurn(extraTurn = extraTurn)
 
     def rollPhase(self, player):
         playerId = player.getId()
         ndice = 1
-        if self.gameState.playerOwnsN(playerId, "trainstation") > 0:
+        if self.playerOwnsN(playerId, "trainstation") > 0:
             request = {"action":"ndice", "options":["1","2"]}
             choice = player.chooseAction(request)
             if choice == "2":
                 ndice = 2
         roll = [random.randint(1,6) for i in range(ndice)]
         debug("rolled " + str(roll))
-        if self.gameState.playerOwnsN(playerId, "radiotower") > 0:
+        if self.playerOwnsN(playerId, "radiotower") > 0:
             request = {"action":"reroll", "lastroll":roll, "options":["y","n"]}
             choice = player.chooseAction(request)
             if choice == "y":
@@ -91,27 +113,27 @@ class Game:
     def satanPhase(self, player, roll):
         if roll == 6:
             playerId = player.getId()
-            if self.gameState.playerOwnsN(playerId, "stadium") > 0:
-                for dupee in self.gameState.getPayOrder():
-                    self.gameState.tryMoveCash(dupee, playerId, 2)
+            if self.playerOwnsN(playerId, "stadium") > 0:
+                for dupee in self.getPayOrder():
+                    self.tryMoveCash(dupee, playerId, 2)
 
-            if self.gameState.playerOwnsN(playerId, "tvstation") > 0:
-                orderedOtherIds = self.gameState.getPayOrder()  # same relative order for everyone
-                accounts = [(p,self.gameState.data["cash"][p]) for p in orderedOtherIds]
+            if self.playerOwnsN(playerId, "tvstation") > 0:
+                orderedOtherIds = self.getPayOrder()  # same relative order for everyone
+                accounts = [(p,self.data["cash"][p]) for p in orderedOtherIds]
                 playersWithCash = [p for p,amount in accounts if amount > 0]
                 if playersWithCash:
                     request = {"action":"steal", "options":playersWithCash + [""]}
                     choice = player.chooseAction(request)
                     if choice != "":
                         assert(choice in playersWithCash)
-                        self.gameState.tryMoveCash(choice, playerId, 5)
+                        self.tryMoveCash(choice, playerId, 5)
 
-            if self.gameState.playerOwnsN(playerId, "businesscenter") > 0:
-                orderedOtherIds = self.gameState.getPayOrder()  # same relative order for everyone
+            if self.playerOwnsN(playerId, "businesscenter") > 0:
+                orderedOtherIds = self.getPayOrder()  # same relative order for everyone
                 tradableCards = ( set(allCards.keys())
                                 - set(landmarkCards.keys())
                                 - set(majorCards.keys()))
-                cities = self.gameState.data["city"]
+                cities = self.data["city"]
 
                 # tradewho
                 playersWithTradableCards = \
@@ -134,49 +156,16 @@ class Game:
                             given = player.chooseAction(request)
                             if given != "":
                                 assert(given in tradeForOptions)
-                                self.gameState.swapBuildings(playerId, given, victim, stolen)
+                                self.swapBuildings(playerId, given, victim, stolen)
 
     def buildPhase(self, player):
         playerId = player.getId()
-        buildings = self.gameState.getBuildableBuildings(playerId)
+        buildings = self.getBuildableBuildings(playerId)
         if len(buildings) > 0: 
             request = {"action":"buid", "options":buildings + [""]}
             choice = player.chooseAction(request)
             if choice in buildings:
-                self.gameState.build(playerId, choice)
-
-class GameState:
-    def __init__(self, playerIds):
-        assert len(players) == 4
-        assert(len(playerIds) == len(set(playerIds))) # check for duplicates
-        self.currentPlayerIndex = 0
-        self.currentTurnNr = 0
-        self.playerIds = playerIds
-        self.data = {}
-        self.data["buildingbank"] = {
-            "wheatfield"        :6,
-            "ranch"             :6,
-            "forest"            :6,
-            "mine"              :6,
-            "appleorchard"      :6,
-            "bakery"            :6,
-            "conveniencestore"  :6,
-            "cheesefactory"     :6,
-            "furniturefactory"  :6,
-            "market"            :6,
-            "cafe"              :6,
-            "restaurant"        :6,
-            "stadium"           :4,
-            "tvstation"         :4,
-            "businesscenter"    :4
-            }
-        self.data["city"] = {}
-        self.data["cash"] = {}
-        for playerId in playerIds:
-            self.data["city"][playerId] = \
-                1 * ["wheatfield"] + \
-                1 * ["bakery"]
-            self.data["cash"][playerId] = 3
+                self.build(playerId, choice)
 
     def getCurrentPlayerId(self):
         return self.playerIds[self.currentPlayerIndex]
@@ -339,9 +328,9 @@ if __name__ == "__main__":
                RandomBot("RandomBot1"), RandomBot("RandomBot2")]
     
     score = {p.getId():0 for p in players}
-    for i in range(1):
+    for i in range(100):
         game = Game(players)
         game.play()
-        winnerId = game.gameState.winnerId()
+        winnerId = game.winnerId()
         score[winnerId] += 1
         print "score = " + str(score)
