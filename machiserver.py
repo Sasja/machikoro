@@ -57,7 +57,7 @@ class Game:
             debug("-> " + playerId + "'s turn")
 
             roll = self.rollPhase(player)
-            # if you roll doubles and have a amusement park you get an extra turn
+            # if you roll doubles and have an amusement park you get an extra turn
             extraTurn = (     self.gameState.playerOwnsN(playerId,"amusementpark")
                           and len(roll) == 2
                           and roll[0] == roll[1] )
@@ -153,7 +153,6 @@ class GameState:
         self.currentTurnNr = 0
         self.playerIds = playerIds
         self.data = {}
-        # TODO figure out right figures
         self.data["buildingbank"] = {
             "wheatfield"        :6,
             "ranch"             :6,
@@ -227,7 +226,6 @@ class GameState:
         #   multiplier cards (cheese factory, furniture factory and market)
         # not affected by shopping mall bonus
         for cardName, cardData in multiplierCards.items():
-            # these card effects do not stack up i believe 2 markets = 1 market TODO: check rules
             if roll in cardData["roll"] and self.playerOwnsN(playerId, cardName):
                 cofactors = cardData["cofactor"]
                 n = sum([self.playerOwnsN(playerId, c) for c in cofactors])
