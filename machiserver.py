@@ -90,7 +90,7 @@ class Table:
             assert(nInBank > 0)
             self.buildingBank[building] = nInBank - 1
         self.cities[playerId].append(building)
-    def swapBuildings(self, playerIdA, buildingA, playerIdB, builingB):
+    def swapBuildings(self, playerIdA, buildingA, playerIdB, buildingB):
         cityA = self.cities[playerIdA]
         cityB = self.cities[playerIdB]
         assert(buildingA in cityA and buildingB in cityB)
@@ -109,17 +109,25 @@ class Table:
         account = self.bank[playerId]
         self.bank[playerId] = account + amount
     def transferCash(self, sourceId, targetId, amount):
-        debug(sourceId + " pays " + str(actualAmount) + " to " + targetId)
-        assert(amount >= self.bank[sourceId])
-        self.bank[sourceId] = account - amount
-        self.bank[targetId] = account + amount
+        debug(sourceId + " pays " + str(amount) + " to " + targetId)
+        sourceN = self.bank[sourceId]
+        targetN = self.bank[targetId]
+        assert(amount <= sourceN)
+        self.bank[sourceId] = sourceN - amount
+        self.bank[targetId] = targetN + amount
     def getPlayerIds(self):
         return self.playerIds
     def playerHasN(self, playerId, building):
         assert(building in allCards)
         return self.cities[playerId].count(building)
+    def playerHasAny(self, playerId, buildings):
+        assert(all([b in allCards for b in buildings]))
+        return len((set(buildings).intersection(self.cities[playerId]))) > 0
+    def getCity(self, playerId):
+        return self.cities[playerId]
     def playerCredit(self, playerId):
         return self.bank[playerId]
+
 
 class RandomDice():
     def roll(self, ndice):
@@ -127,14 +135,14 @@ class RandomDice():
         return [random.randint(1,6) for i in range(ndice)]
 
 class Game:
-    def __init__(self, players):
+    def __init__(self, players, dice = RandomDice()):
         self.playerIds = [p.getId() for p in players]
         assert(len(self.playerIds) == len(set(self.playerIds)) == 4) # check for duplicate playerIds
         self.currentPlayerIndex = 0
         self.playerDict = {p.getId():p for p in players}
         self.currentTurnNr = 0
         self.table = Table(self.playerIds)
-        self.dice = RandomDice()
+        self.dice = dice
     def getWinnerId(self):
         winners = []
         playerIds = self.table.getPlayerIds()
@@ -163,8 +171,8 @@ class Game:
             if extraTurn:
                 debug(playerId + " threw doubles, so gets another turn after this one!")
 
-            self._calcIncome(player, roll)
-            self._satanPhase(player, roll) #will only do smth on roll == 6
+            self._calcIncome(player, sum(roll))
+            self._satanPhase(player, sum(roll)) #will only do smth on roll == 6
             self._buildPhase(player)
 
             self._endTurn(extraTurn = extraTurn)
@@ -183,16 +191,16 @@ class Game:
             request = {"action":"reroll", "lastroll":roll, "options":["y","n"]}
             choice = player.chooseAction(request)
             if choice == "y":
-                roll = dice.roll(ndice)
+                roll = self.dice.roll(ndice)
                 debug("rerolled " + str(roll))
         return roll
 
     def _satanPhase(self, player, roll):
-        if sum(roll) == 6:
+        if roll == 6:
             playerId = player.getId()
             if self.table.playerHasN(playerId, "stadium") > 0:
                 for dupee in self._getPayOrder():
-                    self.table._tryMoveCash(dupee, playerId, 2)
+                    self._tryMoveCash(dupee, playerId, 2)
 
             if self.table.playerHasN(playerId, "tvstation") > 0:
                 orderedOtherIds = self._getPayOrder()  # same relative order for everyone
@@ -210,25 +218,25 @@ class Game:
                 tradableCards = ( set(allCards.keys())
                                 - set(landmarkCards.keys())
                                 - set(majorCards.keys()))
-                cities = {pId:self.table.getCity(pId) for p in self.playerIds}
 
                 # tradewho
                 playersWithTradableCards = \
                     [otherPlayerId for otherPlayerId in orderedOtherIds
-                                   if tradableCards.intersection(cities[otherPlayerId])]
+                                   if self.table.playerHasAny(otherPlayerId, tradableCards)]
+                                   #if tradableCards.intersection(cities[otherPlayerId])]
                 if playersWithTradableCards:
                     request = {"action":"tradewho", "options":playersWithTradableCards + [""]}
                     victimId = player.chooseAction(request)
                     if victimId != "":
                         assert(victimId in playersWithTradableCards)
                         # tradewhat
-                        tradeWhatOptions = list(tradableCards.intersection(cities[victimId]))
+                        tradeWhatOptions = list(tradableCards.intersection(self.table.getCity(victimId)))
                         request = {"action":"tradewhat", "options":tradeWhatOptions + [""]}
                         stolen = player.chooseAction(request)
                         if stolen != "":
                             assert(stolen in tradeWhatOptions)
                             # tradefor
-                            tradeForOptions = list(tradableCards.intersection(cities[playerId]))
+                            tradeForOptions = list(tradableCards.intersection(self.table.getCity(playerId)))
                             request = {"action":"tradefor", "options":tradeForOptions + [""]}
                             given = player.chooseAction(request)
                             if given != "":
@@ -253,12 +261,12 @@ class Game:
         result.reverse()
         return result
 
-    def _calcIncome(self, player, roll):
+    def _calcIncome(self, player, rollSum):
         playerId = player.getId()
         # first red (commercial buildings, you'll pay for this)
         # also affected by shopping mall bonus
         for cardName, cardData in commercialCards.items():
-            if roll in cardData["roll"]:
+            if rollSum in cardData["roll"]:
                 basicAmount = cardData["amount"]
                 for luckyBastardId in self._getPayOrder():
                     n = self.table.playerHasN(luckyBastardId, cardName)
@@ -270,7 +278,7 @@ class Game:
         #   regular secondary cards (bakery and convenience store)
         #   also affected by shoppingmall bonus
         for cardName, cardData in secondaryCards.items():
-            if roll in cardData["roll"]:
+            if rollSum in cardData["roll"]:
                 n = self.table.playerHasN(playerId, cardName)
                 shoppingmallBonus = 1 if self.table.playerHasN(playerId, cardName) else 0
                 if n > 0:
@@ -281,7 +289,7 @@ class Game:
         #   multiplier cards (cheese factory, furniture factory and market)
         # not affected by shopping mall bonus
         for cardName, cardData in multiplierCards.items():
-            if roll in cardData["roll"] and self.table.playerHasN(playerId, cardName):
+            if rollSum in cardData["roll"] and self.table.playerHasN(playerId, cardName):
                 cofactors = cardData["cofactor"]
                 n = sum([self.table.playerHasN(playerId, c) for c in cofactors])
                 if n > 0:
@@ -289,7 +297,7 @@ class Game:
 
         # then blue (anyone benefits from any throw)
         for cardName, cardData in primaryCards.items():
-            if roll in cardData["roll"]:
+            if rollSum in cardData["roll"]:
                 for anyPlayerId in self.playerIds:
                     n = self.table.playerHasN(anyPlayerId, cardName)
                     if n > 0:
@@ -298,8 +306,8 @@ class Game:
         #purple not handled here as it needs player input
 
     def _tryMoveCash(self, sourceId, targetId, amount):
-        sourceN = self.table.playerCredit[sourceId]
-        targetN = self.table.playerCredit[targetId]
+        sourceN = self.table.playerCredit(sourceId)
+        targetN = self.table.playerCredit(targetId)
         actualAmount = min(amount, sourceN)
         if actualAmount > 0:
             self.table.transferCash(sourceId, targetId, actualAmount)
@@ -362,7 +370,7 @@ if __name__ == "__main__":
     playerIds = [p.getId() for p in players]
     
     score = {p.getId():0 for p in players}
-    for i in range(10):
+    for i in range(100):
         game = Game(players)
         game.play()
         score[game.getWinnerId()] += 1
