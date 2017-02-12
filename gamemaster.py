@@ -342,51 +342,17 @@ class Game:
         if not extraTurn:
             self.currentPlayerIndex = (self.currentPlayerIndex + 1) % len(self.playerIds)
 
-class Player:
-    def __init__(self, playerId):
-        self.playerId = playerId
-
-    def getId(self):
-        return self.playerId
-
-    def chooseAction(self, actionRequest):
-        raise NotImplementedError()
-
-class YesToAllBot(Player):
-    # this is a most dumb bot, but better than the randombot!
-    def chooseAction(self, actionRequest):
-        debug(actionRequest)
-        choice = actionRequest["options"][0]
-        debug(choice)
-        return choice
-
-class RandomBot(Player):
-    # this is the absolute baseline AI
-    def chooseAction(self, actionRequest):
-        debug(actionRequest)
-        choice = random.choice(actionRequest["options"])
-        debug(choice)
-        return choice
-
-class CafeBot(Player):
-    # this bot favours buying cafes for some reason
-    def chooseAction(self, actionRequest):
-        debug(actionRequest)
-        if "cafe" in actionRequest["options"]:
-            choice = "cafe"
-        else:
-            choice = random.choice(actionRequest["options"])
-        debug(choice)
-        return choice
-
 if __name__ == "__main__":
-    random.seed(1)
+    from machiplayers import YesToAllBot, RandomBot, CafeBot, HTTPRemote
+    random.seed()
+#    players = [YesToAllBot("YesBot"), CafeBot("CafeBot"),
+#               RandomBot("RandomBot1"), RandomBot("RandomBot2")]
     players = [YesToAllBot("YesBot"), CafeBot("CafeBot"),
-               RandomBot("RandomBot1"), RandomBot("RandomBot2")]
+               RandomBot("RandomBot1"), HTTPRemote("polly", "http://127.0.0.1:6666")]
     playerIds = [p.getId() for p in players]
     
     score = {p.getId():0 for p in players}
-    for i in range(100):
+    for i in range(1):
         game = Game(players)
         game.play()
         score[game.getWinnerId()] += 1
