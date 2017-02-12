@@ -74,13 +74,16 @@ class Table:
             self.build(playerId, "wheatfield")
             self.build(playerId, "bakery")
             self.gainCash(playerId, 3)
+            
     def __str__(self):
         return pprint.pformat({
             "bank":self.bank,
             "cities":self.cities,
             "buildingbank":self.buildingBank})
+
     def availableBuildings(self):
         return [b for b,n in self.buildingBank.items() if n > 0]
+
     def build(self, playerId, building):
         debug(playerId + " builds a " + building)
         if building in landmarkCards.keys():
@@ -90,6 +93,7 @@ class Table:
             assert(nInBank > 0)
             self.buildingBank[building] = nInBank - 1
         self.cities[playerId].append(building)
+
     def swapBuildings(self, playerIdA, buildingA, playerIdB, buildingB):
         cityA = self.cities[playerIdA]
         cityB = self.cities[playerIdB]
@@ -99,15 +103,18 @@ class Table:
         cityA.append(buildingB)
         cityB.append(buildingA)
         debug(playerIdA + " trades its " + buildingA + " with " + playerIdB + "'s " + buildingB)
+
     def looseCash(self, playerId, amount):
         debug(playerId + " pays " + str(amount) + " to the bank")
         account = self.bank[playerId]
         assert(amount <= account)
         self.bank[playerId] = account - amount
+
     def gainCash(self, playerId, amount):
         debug(playerId + " gets " + str(amount) + " from the bank")
         account = self.bank[playerId]
         self.bank[playerId] = account + amount
+
     def transferCash(self, sourceId, targetId, amount):
         debug(sourceId + " pays " + str(amount) + " to " + targetId)
         sourceN = self.bank[sourceId]
@@ -115,19 +122,23 @@ class Table:
         assert(amount <= sourceN)
         self.bank[sourceId] = sourceN - amount
         self.bank[targetId] = targetN + amount
+
     def getPlayerIds(self):
         return self.playerIds
+
     def playerHasN(self, playerId, building):
         assert(building in allCards)
         return self.cities[playerId].count(building)
+
     def playerHasAny(self, playerId, buildings):
         assert(all([b in allCards for b in buildings]))
         return len((set(buildings).intersection(self.cities[playerId]))) > 0
+
     def getCity(self, playerId):
         return self.cities[playerId]
+
     def playerCredit(self, playerId):
         return self.bank[playerId]
-
 
 class RandomDice():
     def roll(self, ndice):
@@ -143,6 +154,7 @@ class Game:
         self.currentTurnNr = 0
         self.table = Table(self.playerIds)
         self.dice = dice
+
     def getWinnerId(self):
         winners = []
         playerIds = self.table.getPlayerIds()
@@ -151,11 +163,7 @@ class Game:
                 winners.append(playerId)
         assert(len(winners) < 2) # two winners are not possible without having one first
         return None if len(winners) == 0 else winners[0]
-    def _endTurn(self, extraTurn = False):
-        debug("==========   ending turn " + str(self.currentTurnNr) + "   ==========")
-        self.currentTurnNr += 1
-        if not extraTurn:
-            self.currentPlayerIndex = (self.currentPlayerIndex + 1) % len(self.playerIds)
+    
     def play(self):
         while self.getWinnerId() == None:
             playerId = self.playerIds[self.currentPlayerIndex]
@@ -328,11 +336,19 @@ class Game:
         self.table.looseCash(playerId,cost)
         self.table.build(playerId, building)
 
+    def _endTurn(self, extraTurn = False):
+        debug("==========   ending turn " + str(self.currentTurnNr) + "   ==========")
+        self.currentTurnNr += 1
+        if not extraTurn:
+            self.currentPlayerIndex = (self.currentPlayerIndex + 1) % len(self.playerIds)
+
 class Player:
     def __init__(self, playerId):
         self.playerId = playerId
+
     def getId(self):
         return self.playerId
+
     def chooseAction(self, actionRequest):
         raise NotImplementedError()
 
