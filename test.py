@@ -1,3 +1,3 @@
 #!/usr/bin/env python
 
-print "a test indeed"
+print "a test indeed2"
