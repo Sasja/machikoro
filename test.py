@@ -1,3 +1,5 @@
 #!/usr/bin/env python
 
-print "a test indeed2"
+"""Dummy code for playing with docker, remove me"""
+
+print "a test indeed"

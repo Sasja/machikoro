@@ -1,3 +1,5 @@
+# sasja: first time docker, good enought for a poc
+
 FROM ubuntu:latest
 
 RUN apt-get -y update && apt-get install -y\
