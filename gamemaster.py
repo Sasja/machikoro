@@ -6,6 +6,9 @@ def debug(message):
     print message
     pass
 
+rnd = random.Random()
+rnd.seed()
+
 # http://idwgames.com/wp-content/uploads/2015/02/Machi-RULES-reduced.pdf
 # http://i2.wp.com/rollindiceshow.com/wp-content/uploads/2015/03/IMG_0003.jpg
 allCards = {
@@ -143,7 +146,7 @@ class Table:
 class RandomDice():
     def roll(self, ndice):
         assert(0 < ndice <= 2)
-        return [random.randint(1,6) for i in range(ndice)]
+        return [rnd.randint(1,6) for i in range(ndice)]
 
 class Game:
     def __init__(self, players, dice = RandomDice()):
@@ -187,6 +190,7 @@ class Game:
             self._buildPhase(player)
 
             self._endTurn(extraTurn = extraTurn)
+        debug("=========   {} wins !!!   =========".format(self.getWinnerId()) )
 
     def _rollPhase(self, player):
         playerId = player.getId()
@@ -341,22 +345,3 @@ class Game:
         self.currentTurnNr += 1
         if not extraTurn:
             self.currentPlayerIndex = (self.currentPlayerIndex + 1) % len(self.playerIds)
-
-if __name__ == "__main__":
-    random.seed()
-
-    from machiplayers import YesToAllBot, RandomBot, CafeBot, HTTPRemote
-    players = [
-        YesToAllBot("YesBot"),
-        CafeBot("CafeBot"),
-        RandomBot("RandomBot1"),
-        HTTPRemote("polly", "http://127.0.0.1:1337")
-        ]
-
-    playerIds = [p.getId() for p in players]
-    score = {p.getId():0 for p in players}
-    for i in range(1):
-        game = Game(players)
-        game.play()
-        score[game.getWinnerId()] += 1
-        print "score = " + str(score)

@@ -1,4 +1,6 @@
 # machikoro
 machikoro AI competition framework
 
-[design](design.md)
+Run [test.py](test.py) to see action
+
+## [design](design.md)

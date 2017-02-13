@@ -1,6 +1,9 @@
 from gamemaster import debug
-import random #rely on main to initialise random
+import random
 import requests,json
+
+rnd = random.Random()
+rnd.seed()
 
 class MachiPlayer:
     def __init__(self, playerId):
