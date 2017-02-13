@@ -23,4 +23,5 @@ even better, lots to do! talk to sasja. it would be cool if you could help get s
 * game ai
 * any language skill for writing bot templates
 * general software architecture
+* github
 * markdown :)
