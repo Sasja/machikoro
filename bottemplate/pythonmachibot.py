@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import json
 import random
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
@@ -30,9 +31,25 @@ def chooseAction(actionRequest):
     return choice
 
 if __name__ == "__main__":
-    address = ('127.0.0.1', 6666)
+    DEFAULT_IP = "127.0.0.1" 
+    DEFAULT_PORT = 1337
+
+    if "MACHI_IP" in os.environ:
+        print "setting IP from $MACHI_IP"
+        ip = os.environ["MACHI_IP"]
+    else:
+        print "no $MACHI_IP found, using default IP"
+        ip = DEFAULT_IP
+
+    if "MACHI_PORT" in os.environ: 
+        print "setting PORT from $MACHI_PORT"
+        port = int(os.environ["MACHI_PORT"])
+    else:
+        print "no $MACHI_PORT found, using default PORT"
+        port = DEFAULT_PORT
+    address = (ip, port)
+
+    print "binding server to {}".format(str(address))
     httpd = HTTPServer(address, MachiBotHandler)
 
     httpd.serve_forever()
-    #while True:
-    #    httpd.handle_request()
