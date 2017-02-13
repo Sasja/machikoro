@@ -155,6 +155,9 @@ class Game:
         self.table = Table(self.playerIds)
         self.dice = dice
 
+    def getCurrentPlayerId(self):
+        return self.playerIds[self.currentPlayerIndex]
+
     def getWinnerId(self):
         winners = []
         playerIds = self.table.getPlayerIds()
@@ -260,9 +263,6 @@ class Game:
             if choice in buildings:
                 self._buyBuilding(playerId, choice)
 
-    def getCurrentPlayerId(self):
-        return self.playerIds[self.currentPlayerIndex]
-
     def _getPayOrder(self):
         i = self.currentPlayerIndex
         result = self.playerIds[i+1:] + self.playerIds[:i]
@@ -343,14 +343,17 @@ class Game:
             self.currentPlayerIndex = (self.currentPlayerIndex + 1) % len(self.playerIds)
 
 if __name__ == "__main__":
-    from machiplayers import YesToAllBot, RandomBot, CafeBot, HTTPRemote
     random.seed()
-#    players = [YesToAllBot("YesBot"), CafeBot("CafeBot"),
-#               RandomBot("RandomBot1"), RandomBot("RandomBot2")]
-    players = [YesToAllBot("YesBot"), CafeBot("CafeBot"),
-               RandomBot("RandomBot1"), HTTPRemote("polly", "http://127.0.0.1:6666")]
+
+    from machiplayers import YesToAllBot, RandomBot, CafeBot, HTTPRemote
+    players = [
+        YesToAllBot("YesBot"),
+        CafeBot("CafeBot"),
+        RandomBot("RandomBot1"),
+        HTTPRemote("polly", "http://127.0.0.1:1337")
+        ]
+
     playerIds = [p.getId() for p in players]
-    
     score = {p.getId():0 for p in players}
     for i in range(1):
         game = Game(players)
