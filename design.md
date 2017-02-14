@@ -36,6 +36,7 @@ interfaces with:
 * deploy bots in dockercontainers
 * set up environment for GameMaster
 * bot resource allocation
+* clean up when done
 
 interfaces with:
 
