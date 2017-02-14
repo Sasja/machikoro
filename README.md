@@ -24,4 +24,5 @@ even better, lots to do! talk to sasja. it would be cool if you could help get s
 * any language skill for writing bot templates
 * general software architecture
 * github
+* behavioral psychology (or how to make it addictive!)
 * markdown :)
