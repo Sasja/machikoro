@@ -20,7 +20,7 @@ if __name__ == "__main__":
         machiplayers.YesToAllBot("YesBot"),
         machiplayers.CafeBot("CafeBot"),
         machiplayers.RandomBot("RandomBot"),
-        machiplayers.HTTPRemote("HTTPRemote", "http://127.0.0.1:1234")
+        machiplayers.HTTPBot("HTTPBot", "http://127.0.0.1:1234")
         ]
 
     playerIds = [p.getId() for p in players]

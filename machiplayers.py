@@ -42,7 +42,7 @@ class CafeBot(MachiPlayer):
         debug(choice)
         return choice
 
-class HTTPRemote(MachiPlayer):
+class HTTPBot(MachiPlayer):
     def __init__(self, playerId, url):
         MachiPlayer.__init__(self, playerId)
         self.url = url
