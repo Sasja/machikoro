@@ -2,8 +2,23 @@
     "title": "Machikoro AI Bot API Schema",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
-    "properties": {
-        "action": {
+    "allOf" : [
+        { "$ref" : "#/definitions/generalactionrequest" },
+        {
+            "type" : "object",
+            "oneOf" : [
+                { "$ref" : "#/definitions/ndicerequest" },
+                { "$ref" : "#/definitions/rerollrequest" },
+                { "$ref" : "#/definitions/stealrequest" },
+                { "$ref" : "#/definitions/tradewhorequest" },
+                { "$ref" : "#/definitions/tradewhatrequest" },
+                { "$ref" : "#/definitions/tradeforrequest" },
+                { "$ref" : "#/definitions/buildrequest" }
+            ]
+        }
+    ],
+    "definitions" : {
+        "action" : {
             "type" : "string",
             "enum" : [
                 "ndice",
@@ -13,17 +28,41 @@
                 "tradewhat",
                 "tradefor",
                 "build"
-            ] }
+            ]
         },
-        "options": {
-            "type": "array",
-            "items" : {
-                "type" : "string"
-            },
-            "minItems" : 2,
-            "uniqueItems": true
+        "building" : {
+            "type" : "string",
+            "enum" : [
+                "wheatfield",
+                "ranch",
+                "forest",
+                "mine",
+                "appleorchard",
+                "bakery",
+                "conveniencestore",
+                "cheesefactory",
+                "furniturefactory",
+                "market",
+                "cafe",
+                "restaurant",
+                "stadium",
+                "tvstation",
+                "businesscenter",
+                "trainstation",
+                "shoppingmall",
+                "amusementpark",
+                "radiotower"
+            ]
         },
-        "lastroll" : {
+        "playerId" : {
+            "type" : "string",
+            "minLength" : 1
+        },
+        "none" : {
+            "type" : "string",
+            "enum" : [""]
+        },
+        "diceroll" : {
             "type": "array",
             "items": {
                 "type" : "number",
@@ -33,13 +72,123 @@
             "minItems" : 1,
             "maxItems" : 2 
         },
-        "fromwho": {
-            "type" : "string"
+        "generalactionrequest" : {
+            "type" : "object",
+            "properties" : {
+                "action": { "$ref": "#/definitions/action" },
+                "options": {
+                    "type": "array",
+                    "items" : {
+                        "type" : "string"
+                    },
+                    "minItems" : 2,
+                    "uniqueItems": true
+                },
+                "lastroll" : {},
+                "fromwho" : {},
+                "whatbuilding" : {}
+            },
+            "additionalProperties" : false,
+            "required" : ["action", "options"]
         },
-        "whatbuilding" : {
-            "type" : "string"
+        "ndicerequest" : {
+            "type" : "object",
+            "properties" : {
+                "action" : { "enum" : [ "ndice" ] },
+                "options" : { "enum" : [ [ "1", "2" ] ] }
+            }
+        },
+        "rerollrequest" : {
+            "type" : "object",
+            "properties" : {
+                "action" : { "enum" : [ "reroll" ] },
+                "options" : { "enum" : [ [ "y", "n" ] ] },
+                "lastroll" : { "$ref" : "#/definitions/diceroll" }
+            },
+            "required" : ["lastroll"]
+        },
+        "stealrequest" : {
+            "type" : "object",
+            "properties" : {
+                "action" : { "enum" : [ "steal" ] },
+                "options" : { 
+                    "type" : "array",
+                    "items" : {
+                        "oneOf" : [
+                            { "$ref" : "#/definitions/playerId" },
+                            { "$ref" : "#/definitions/none" }
+                        ]
+                    }
+                }
+            }
+        },
+        "tradewhorequest" : {
+            "type" : "object",
+            "properties" : {
+                "action" : { "enum" : [ "tradewho" ] },
+                "options" : { 
+                    "type" : "array",
+                    "items" : {
+                        "oneOf" : [
+                            { "$ref" : "#/definitions/playerId" },
+                            { "$ref" : "#/definitions/none" }
+                        ]
+                    }
+                }
+            }
+        },
+        "tradewhatrequest" : {
+            "type" : "object",
+            "properties" : {
+                "action" : { "enum" : [ "tradewhat" ] },
+                "options" : { 
+                    "type" : "array",
+                    "items" : {
+                        "oneOf" : [
+                            { "$ref" : "#/definitions/building" },
+                            { "$ref" : "#/definitions/none" }
+                        ]
+                    }
+                },
+                "fromwho" : { "$ref" : "#/definitions/playerId" }
+            },
+            "required" : ["fromwho"]
+        },
+        "tradeforrequest" : {
+            "type" : "object",
+            "properties" : {
+                "action" : { "enum" : [ "tradefor" ] },
+                "options" : { 
+                    "type" : "array",
+                    "items" : {
+                        "oneOf" : [
+                            { "$ref" : "#/definitions/building" },
+                            { "$ref" : "#/definitions/none" }
+                        ]
+                    }
+                },
+                "fromwho" : { "$ref" : "#/definitions/playerId" },
+                "whatbuilding" : { "$ref" : "#/definitions/building" }
+            },
+            "required" : ["fromwho", "whatbuilding"]
+        },
+        "buildrequest" : {
+            "type" : "object",
+            "properties" : {
+                "action" : { "enum" : [ "build" ] },
+                "options" : { 
+                    "type" : "array",
+                    "items" : {
+                        "oneOf" : [
+                            { "$ref" : "#/definitions/building" },
+                            { "$ref" : "#/definitions/none" }
+                        ]
+                    }
+                }
+            }
         }
-    },
-    "additionalProperties": false,
-    "required": ["action", "options"]
+    }
 }
+
+
+
