@@ -32,6 +32,12 @@
             },
             "minItems" : 1,
             "maxItems" : 2 
+        },
+        "fromwho": {
+            "type" : "string"
+        },
+        "whatbuilding" : {
+            "type" : "string"
         }
     },
     "additionalProperties": false,
