@@ -23,7 +23,7 @@ reply: 'CafeBot'
 {'action': 'tradewhat', 'fromwho': 'CafeBot', 'options': ['restaurant', 'ranch', 'appleorchard', 'bakery', 'wheatfield', 'market', 'forest', '']}
 reply: 'restaurant'
 
-{'action': 'tradefor', 'fromwho': 'marvin', 'whatbuilding': 'restaurant', 'options': ['restaurant', 'ranch', 'mine', 'bakery', 'wheatfield', 'furniturefactory', 'forest', '']}
+{'action': 'tradefor', 'fromwho': 'CafeBot', 'whatbuilding': 'restaurant', 'options': ['restaurant', 'ranch', 'mine', 'bakery', 'wheatfield', 'furniturefactory', 'forest', '']}
 reply: 'wheatfield'
 
 {'action': 'build', 'options': ['mine', 'cheesefactory', 'wheatfield', '']}
