@@ -49,7 +49,7 @@ reply: 'cheesefactory'
 These are the building strings you are looking for:
 
 ```
-"wheattfield"
+"wheatfield"
 "ranch"
 "forest"
 "mine"
@@ -69,3 +69,6 @@ These are the building strings you are looking for:
 "amusementpark"
 "radiotower"
 ```
+
+### game state
+todo
