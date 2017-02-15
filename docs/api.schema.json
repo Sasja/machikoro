@@ -1,0 +1,39 @@
+{
+    "title": "Machikoro AI Bot API Schema",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "action": {
+            "type" : "string",
+            "enum" : [
+                "ndice",
+                "reroll",
+                "steal",
+                "tradewho",
+                "tradewhat",
+                "tradefor",
+                "build"
+            ] }
+        },
+        "options": {
+            "type": "array",
+            "items" : {
+                "type" : "string"
+            },
+            "minItems" : 2,
+            "uniqueItems": true
+        },
+        "lastroll" : {
+            "type": "array",
+            "items": {
+                "type" : "number",
+                "minimum" : 1,
+                "maximum" : 6
+            },
+            "minItems" : 1,
+            "maxItems" : 2 
+        }
+    },
+    "additionalProperties": false,
+    "required": ["action", "options"]
+}
