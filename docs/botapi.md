@@ -71,4 +71,4 @@ These are the building strings you are looking for:
 ```
 
 ### game state
-todo
+TODO! bots dont get any info about gamestate yet!
