@@ -304,13 +304,15 @@ class Game:
 
         # green bis
         #   multiplier cards (cheese factory, furniture factory and market)
-        # not affected by shopping mall bonus
+        #   not affected by shopping mall bonus
         for cardName, cardData in multiplierCards.items():
-            if rollSum in cardData["roll"] and self.table.playerHasN(playerId, cardName):
-                cofactors = cardData["cofactor"]
-                n = sum([self.table.playerHasN(playerId, c) for c in cofactors])
-                if n > 0:
-                    self.table.gainCash(playerId, n * cardData["factor"])
+            if rollSum in cardData["roll"]:
+                nMult = self.table.playerHasN(playerId, cardName)
+                if nMult > 0:
+                    cofactors = cardData["cofactor"]
+                    nCofact = sum([self.table.playerHasN(playerId, c) for c in cofactors])
+                    if nCofact > 0:
+                        self.table.gainCash(playerId, nMult * nCofact * cardData["factor"])
 
         # then blue (anyone benefits from any throw)
         for cardName, cardData in primaryCards.items():
