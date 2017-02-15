@@ -246,13 +246,18 @@ class Game:
                         assert(victimId in playersWithTradableCards)
                         # tradewhat
                         tradeWhatOptions = list(tradableCards.intersection(self.table.getCity(victimId)))
-                        request = {"action":"tradewhat", "options":tradeWhatOptions + [""]}
+                        request = {"action":"tradewhat",
+                                   "fromwho":victimId,
+                                   "options":tradeWhatOptions + [""]}
                         stolen = player.chooseAction(request)
                         if stolen != "":
                             assert(stolen in tradeWhatOptions)
                             # tradefor
                             tradeForOptions = list(tradableCards.intersection(self.table.getCity(playerId)))
-                            request = {"action":"tradefor", "options":tradeForOptions + [""]}
+                            request = {"action":"tradefor",
+                                       "fromwho":victimId,
+                                       "whatbuilding":stolen,
+                                       "options":tradeForOptions + [""]}
                             given = player.chooseAction(request)
                             if given != "":
                                 assert(given in tradeForOptions)
