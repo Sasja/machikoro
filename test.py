@@ -24,25 +24,19 @@ class ApiValidator:
         return self.bot.chooseAction(actionRequest)
 
 if __name__ == "__main__":
-
-#    botcommand = "bottemplate/pythonmachibot.py"
-#    print "starting bot {}".format(botcommand)
-#    popen = subprocess.Popen(
-#        botcommand,
-#        env = {"MACHI_IP":"127.0.0.1", "MACHI_PORT":"1234"} )
-#    print "giving the process a second to get started"
-#    time.sleep(1)
-    container = botherder.ContainedAi()
-    container.deploy()
-    print "giving the container a second to get started"
-    time.sleep(1)
+    print "deploying 4 docker containers for contestants"
+    ports = [2001,2002,2003,2004]
+    containers = [botherder.ContainedAi(port) for port in ports]
+    for c in containers:
+        c.deploy()
     try:
-        players = [
-            machiplayers.YesToAllBot("YesBot"),
-            machiplayers.CafeBot("CafeBot"),
-            machiplayers.RandomBot("RandomBot"),
-            machiplayers.HTTPBot("HTTPBot", "http://127.0.0.1:1234")
-            ]
+
+        print "giving the containers a second to get started"
+        time.sleep(10)
+        players = [machiplayers.HTTPBot(
+                        "bot_{}".format(str(p)),
+                        "http://127.0.0.1:{}".format(str(p))
+                    ) for p in ports ]
 
         if validateApi:
             with open("docs/api.schema.json","r") as f:
@@ -52,14 +46,15 @@ if __name__ == "__main__":
         playerIds = [p.getId() for p in players]
         score = {p.getId():0 for p in players}
 
-        for i in range(1):
+        for i in range(5):
             game = gamemaster.Game(players)
             game.play()
             score[game.getWinnerId()] += 1
 
         print
         print "final score: {}".format(str(score))
+
     finally:
-        print "destroying container"
-        container.destroy()
-#popen.kill()
+        print "destroying containers"
+        for c in containers:
+            c.destroy()
