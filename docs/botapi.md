@@ -4,7 +4,7 @@ This specifies the API your bot needs to provide to be able to compete. Fully fu
 ## HTTP server
 The bot must run a HTTP server on startup. As a server the bot cannot speak unless being asked to do so by the Gamemaster.
 
-The IP and PORT to bind to should be read from the environment variables ```$MACHI_IP``` and ```$MACHI_PORT```. If these variables are not set, the bot should bind to ```127.0.0.1:1337```
+The IP and PORT to bind to should be read from the environment variables ```$MACHI_IP``` and ```$MACHI_PORT```. If these variables are not set, the bot should bind to ```0.0.0.0:1337```
 
 The bot must accept POST requests from a Gamemaster. 
 

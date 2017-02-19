@@ -31,7 +31,7 @@ def chooseAction(actionRequest):
     return choice
 
 if __name__ == "__main__":
-    DEFAULT_IP = "127.0.0.1" 
+    DEFAULT_IP = "0.0.0.0" 
     DEFAULT_PORT = 1337
 
     if "MACHI_IP" in os.environ:

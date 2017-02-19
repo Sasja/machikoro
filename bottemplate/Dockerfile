@@ -13,4 +13,7 @@ RUN pip install \
 
 RUN git clone https://github.com/sasja/machikoro
 
-CMD cd machikoro && git pull && python ./test.py
+#CMD cd machikoro && git pull && python ./test.py
+CMD cd machikoro/bottemplate && \
+    git pull && \
+    python ./pythonmachibot.py
