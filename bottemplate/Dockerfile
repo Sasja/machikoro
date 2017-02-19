@@ -1,9 +1,6 @@
-# sasja: first time docker, good enought for a poc
-
 FROM ubuntu:latest
 
-RUN apt-get -y update && apt-get install -y \
-    git \
+RUN apt-get update && apt-get install -y \
     python \
     python-pip
 
@@ -11,9 +8,6 @@ RUN pip install \
     requests \
     jsonschema
 
-RUN git clone https://github.com/sasja/machikoro
+COPY pythonmachibot.py .
 
-#CMD cd machikoro && git pull && python ./test.py
-CMD cd machikoro/bottemplate && \
-    git pull && \
-    python ./pythonmachibot.py
+CMD python pythonmachibot.py
