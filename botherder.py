@@ -14,3 +14,4 @@ class ContainedAi:
             )
     def destroy(self):
         self.container.kill()
+        self.container.remove()
