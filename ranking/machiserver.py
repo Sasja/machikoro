@@ -3,6 +3,7 @@ import os
 import json
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import pprint
+import requests
 
 import ranking
 
@@ -26,7 +27,16 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.getheader('content-length'))
         requestString = self.rfile.read(length)
         requestDict = json.loads(requestString)
-        self.wfile.write(requestDict)
+        url=requestDict["repository"]["http_url"]
+        branches_url=requestDict["repository"]["branches_url"]
+        branches = json.loads(requests(branches_url).text)
+        debug(pprint.pformat(branches))
+        rank = ranking.Ranking("ranky.rnk")
+        for i in branches:
+            branch = i["name"]
+            commit = i["commit"]["sha"]
+            rank.addEntry(url, branch, commit, 666)
+        self.wfile.write(requestDict["zen"])
 
 if __name__ == "__main__":
     DEFAULT_IP = "0.0.0.0" 
