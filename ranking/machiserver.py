@@ -29,7 +29,7 @@ class Handler(BaseHTTPRequestHandler):
         requestDict = json.loads(requestString)
         url=requestDict["repository"]["clone_url"]
         branches_url=requestDict["repository"]["branches_url"]
-        branches = json.loads(requests(branches_url).text)
+        branches = json.loads(requests.get(branches_url).text)
         debug(pprint.pformat(branches))
         rank = ranking.Ranking("ranky.rnk")
         for i in branches:
