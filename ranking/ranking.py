@@ -1,50 +1,38 @@
 #!/usr/bin/env python
-
-import os
 import json
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
-def debug(message):
-    print message
-    pass
-
-class RankingHandler(BaseHTTPRequestHandler):
-    def _set_headers(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-
-    def do_GET(self):
-        self._set_headers()
-        self.wfile.write("booo")
-
-    def do_POST(self):
-        self._set_headers()
-        length = int(self.headers.getheader('content-length'))
-        requestString = self.rfile.read(length)
-        requestDict = json.loads(requestString)
-        self.wfile.write(requestDict)
-
-if __name__ == "__main__":
-    DEFAULT_IP = "0.0.0.0" 
-    DEFAULT_PORT = 1337
-
-    if "MACHI_IP" in os.environ:
-        print "setting IP from $MACHI_IP"
-        ip = os.environ["MACHI_IP"]
-    else:
-        print "no $MACHI_IP found, using default IP"
-        ip = DEFAULT_IP
-
-    if "MACHI_PORT" in os.environ: 
-        print "setting PORT from $MACHI_PORT"
-        port = int(os.environ["MACHI_PORT"])
-    else:
-        print "no $MACHI_PORT found, using default PORT"
-        port = DEFAULT_PORT
-    address = (ip, port)
-
-    print "binding server to {}".format(str(address))
-    httpd = HTTPServer(address, RankingHandler)
-
-    httpd.serve_forever()
+class Ranking:
+    def __init__(self, fn):
+        self.fn = fn
+        with open(self.fn, "a+") as f:
+            try:
+                self.data = json.load(f)
+            except:
+                self.data = {}
+    def _save(self):
+        with open(self.fn, "w+") as f:
+            json.dump(self.data, f)
+    def addEntry(self, url, branch, commit, score):
+        entryId = str(abs(hash((url,branch,commit))))
+        self.data[entryId] = {
+                "url":url,
+                "branch":branch,
+                "commit":commit,
+                "score":score
+            }
+        self._save()
+    def getEntryId(self, url, branch, commit):
+        matches = [entryId for entryId,e in self.data.items() if (
+                e["url"] == url
+            and e["branch"] == branch
+            and e["commit"] == commit )]
+        assert len(matches) == 1
+        return matches[0]
+    def updateScore(self, entryId, newScore):
+        self.data[entryId]["score"] = newScore
+        self._save()
+    def getRanking(self):
+        ranking = sorted(self.data.values(), key=lambda x: x["score"], reverse=True)
+        return [(i["score"],
+                 i["url"] + "_" + i["branch"] + "_" + i["commit"][:10])
+                for i in ranking]
