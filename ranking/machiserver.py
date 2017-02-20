@@ -27,7 +27,7 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.getheader('content-length'))
         requestString = self.rfile.read(length)
         requestDict = json.loads(requestString)
-        url=requestDict["repository"]["http_url"]
+        url=requestDict["repository"]["clone_url"]
         branches_url=requestDict["repository"]["branches_url"]
         branches = json.loads(requests(branches_url).text)
         debug(pprint.pformat(branches))
