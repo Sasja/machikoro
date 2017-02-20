@@ -4,6 +4,7 @@ import json
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import pprint
 import requests
+import re
 
 import ranking
 
@@ -28,7 +29,8 @@ class Handler(BaseHTTPRequestHandler):
         requestString = self.rfile.read(length)
         requestDict = json.loads(requestString)
         url=requestDict["repository"]["clone_url"]
-        branches_url=requestDict["repository"]["branches_url"]
+        branches_url=re.sub("{.*?}","",requestDict["repository"]["branches_url"])
+        debug(branches_url)
         branches = json.loads(requests.get(branches_url).text)
         debug(pprint.pformat(branches))
         rank = ranking.Ranking("ranky.rnk")
