@@ -37,8 +37,9 @@ class Handler(BaseHTTPRequestHandler):
         for i in branches:
             branch = i["name"]
             commit = i["commit"]["sha"]
-            rank.addEntry(url, branch, commit, 666)
-        self.wfile.write("ok")
+            debug("adding new entry: {}".format(str((url,branch,commit))))
+            rank.addEntry(url, branch, commit, 1000)
+        self.wfile.write("")
 
 if __name__ == "__main__":
     DEFAULT_IP = "0.0.0.0" 
