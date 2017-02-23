@@ -23,7 +23,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self._set_headers()
         rank = ranking.Ranking(rankingFn)
-        self.wfile.write(pprint.pformat(rank.getRanking()))
+        self.wfile.write(rank.getRanking())
 
     def do_POST(self):
         self._set_headers()
