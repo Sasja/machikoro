@@ -50,6 +50,12 @@ class Ranking:
             with open(self.fn, "r") as f:
                 data = json.load(f)
             ranking = sorted(data.values(), key=lambda x: x["score"], reverse=True)
-            return [(i["score"],
-                     i["url"] + "_" + i["branch"] + "_" + i["commit"][:10])
-                    for i in ranking]
+            print(ranking)
+            return "\n".join([
+                "{: <8} | {: <53} | {: <23} | {: <13}".format(
+                    str(i["score"])[:5],
+                    i["url"][:50],
+                    i["branch"][:20],
+                    i["commit"][:10]
+                    )
+                for i in ranking])
