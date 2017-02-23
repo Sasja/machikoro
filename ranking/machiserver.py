@@ -8,6 +8,8 @@ import re
 
 import ranking
 
+rankingFn = "ranking.json"
+
 def debug(message):
     print message
     pass
@@ -20,26 +22,29 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self._set_headers()
-        rank = ranking.Ranking("ranky.rnk")
+        rank = ranking.Ranking(rankingFn)
         self.wfile.write(pprint.pformat(rank.getRanking()))
 
     def do_POST(self):
         self._set_headers()
+
         length = int(self.headers.getheader('content-length'))
         requestString = self.rfile.read(length)
         requestDict = json.loads(requestString)
+
         url=requestDict["repository"]["clone_url"]
         branches_url=re.sub("{.*?}","",requestDict["repository"]["branches_url"])
-        debug(branches_url)
+
         branches = json.loads(requests.get(branches_url).text)
         debug(pprint.pformat(branches))
-        rank = ranking.Ranking("ranky.rnk")
+        rank = ranking.Ranking(rankingFn)
         for i in branches:
             branch = i["name"]
             commit = i["commit"]["sha"]
             debug("adding new entry: {}".format(str((url,branch,commit))))
             rank.addEntry(url, branch, commit, 1000)
-        self.wfile.write("")
+
+        self.wfile.write("OK")
 
 if __name__ == "__main__":
     DEFAULT_IP = "0.0.0.0" 
@@ -58,6 +63,7 @@ if __name__ == "__main__":
     else:
         print "no $MACHI_PORT found, using default PORT"
         port = DEFAULT_PORT
+
     address = (ip, port)
 
     print "binding server to {}".format(str(address))
