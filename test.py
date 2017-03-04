@@ -2,14 +2,12 @@
 
 import subprocess
 import time
+import json
+from jsonschema import validate
 
 import gamemaster
 import machiplayers
-
 import botherder
-
-import json
-from jsonschema import validate
 
 validateApi = True
 
@@ -32,10 +30,15 @@ if __name__ == "__main__":
     try:
 
         print "giving the containers a second to get started"
-        time.sleep(10)
-        players = [machiplayers.HTTPBot(
+        time.sleep(3)
+        # players = [machiplayers.HTTPBot(
+        #                 "bot_{}".format(str(p)),
+        #                 "http://127.0.0.1:{}".format(str(p))
+        #             ) for p in ports ]
+        players = [machiplayers.TCPBot(
                         "bot_{}".format(str(p)),
-                        "http://127.0.0.1:{}".format(str(p))
+                        "127.0.0.1",
+                        p
                     ) for p in ports ]
 
         if validateApi:

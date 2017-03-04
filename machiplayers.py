@@ -1,6 +1,9 @@
 from gamemaster import debug
 import random
+import socket
 import requests,json
+
+# todo handle errors and timeouts
 
 rnd = random.Random()
 rnd.seed()
@@ -54,3 +57,36 @@ class HTTPBot(MachiPlayer):
         debug(choice)
         return choice
 
+class TCPBot(MachiPlayer):
+    def __init__(self, playerId, host, port):
+        MachiPlayer.__init__(self, playerId)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((host, port))
+    def __del__(self):
+        self.sock.close()
+    def _mysend(self, msg):
+        assert("\n" not in msg)
+        msg += "\n"
+        totalsent = 0
+        while totalsent < len(msg):
+            sent = self.sock.send(msg[totalsent:])
+            if sent == 0:
+                raise RuntimeError("socket connection broken")
+            totalsent = totalsent + sent
+    def _myreceive(self):
+        buff = ""
+        while True:
+            char = self.sock.recv(1)
+            if char == '':
+                raise RuntimeError("socket connection broken")
+            elif char == "\n":
+                break
+            else:
+                buff += char
+        return buff
+    def chooseAction(self, actionRequest):
+        debug(json.dumps(actionRequest))
+        self._mysend(json.dumps(actionRequest))
+        response = self._myreceive()
+        return response
+    
