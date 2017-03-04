@@ -1,15 +1,15 @@
 # Bot API
 This specifies the API your bot needs to provide to be able to compete. Fully functioning bot templates in various languages will help you to get started.
 
-## HTTP server
-The bot must run a HTTP server on startup. As a server the bot cannot speak unless being asked to do so by the Gamemaster.
+## TCP socket server
+The bot must run a TCP socket server to communicate with the server through line delimited JSON.
 
 The IP and PORT to bind to should be read from the environment variables ```$MACHI_IP``` and ```$MACHI_PORT```. If these variables are not set, the bot should bind to ```0.0.0.0:1337```
 
-The bot must accept POST requests from a Gamemaster. 
+The bot must accept a connection from the Gamemaster and keep it open throughout the game.
 
-## Gamemaster json requests and valid response
-A formal specification of the json api is maintained in [/docs/api.schema.json](/docs/api.schema.json) but some examples will be nicer to get started. Each request contains the ```"action"``` keyword indicating what game decision si to be made, and the answer should be one of the strings of the list provided under the ```"options"``` keyword. If the bot replies anything else, it might get disqualified. This basic rule alone allows writing a valid bot without understanding the rules of the game and is exactly what the template bots do. The Gamemaster ensures the options all correspond to valid game actions, and all valid game actions are presented through the options.
+## Gamemaster json requests and valid responses
+A formal specification of the json api is maintained in [/docs/api.schema.json](/docs/api.schema.json) but some examples will be nicer to get started. Each request contains the ```"action"``` keyword indicating what game decision is to be made, and the answer should be one of the strings of the list provided under the ```"options"``` keyword. If the bot replies anything else, it might get disqualified. This basic rule alone allows writing a valid bot without understanding the rules of the game and is exactly what the template bots do. The Gamemaster ensures the options all correspond to valid game actions, and all valid game actions are presented through the options.
 
 Understanding the requests themselves is easy once you grasp the rules of machikoro. Have a look at the following example:
 
